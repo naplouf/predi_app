@@ -7,9 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Node dependencies
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+frontend/dist/
+
+# Environment files
 *.local
 
 # Editor directories and files
@@ -22,5 +29,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-frontend/dist
-frontend/node_modules
+
+# Python cache (backend)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
