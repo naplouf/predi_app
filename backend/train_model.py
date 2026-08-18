@@ -1,4 +1,3 @@
-# train_model.py
 
 import pandas as pd
 import numpy as np
@@ -20,15 +19,12 @@ import joblib
 
 
 def main():
-    # --------------------------------------------------------
-    # 1. LOAD RAW DATA
-    # --------------------------------------------------------
+    # LOAD RAW DATA
     df = pd.read_csv("micro_mar.csv")
     print("Raw shape:", df.shape)
 
-    # --------------------------------------------------------
-    # 2. DROP USELESS COLUMNS (same logic as notebook)
-    # --------------------------------------------------------
+    # DROP USELESS COLUMNS
+
     useless_prefixes = [
         "account_fin",
         "account_mob",
@@ -146,9 +142,7 @@ def main():
     df_clean = df.drop(columns=drop_cols)
     print("After dropping columns:", df_clean.shape)
 
-    # --------------------------------------------------------
-    # 3. BASIC CLEANING & TYPE FIXES
-    # --------------------------------------------------------
+    # BASIC CLEANING & TYPE FIXES
     # Age
     df_clean["age"] = pd.to_numeric(df_clean["age"], errors="coerce")
     df_clean["age"] = df_clean["age"].fillna(df_clean["age"].median()).astype(int)
@@ -181,15 +175,14 @@ def main():
         if col in df_clean.columns:
             df_clean[col] = df_clean[col].astype("category")
 
-    # --------------------------------------------------------
-    # 4. FEATURE ENGINEERING
-    # --------------------------------------------------------
-    # 4.1 Digital activity
+    # FEATURE ENGINEERING
+
+    # Digital activity
     df_clean["digital_activity"] = (
         df_clean["anydigpayment"] + df_clean["merchantpay_dig"]
     )
 
-    # 4.2 Income sources (has_* + count)
+    # Income sources (has_* + count)
     income_cols = [
         "receive_wages",
         "receive_transfers",
@@ -220,12 +213,12 @@ def main():
     has_income_cols = [f"has_{c}" for c in income_cols]
     df_clean["num_income_sources"] = df_clean[has_income_cols].sum(axis=1)
 
-    # 4.3 Financial stability
+    #  Financial stability
     df_clean["financial_stability"] = (
         df_clean["saved"] + df_clean["account"] + df_clean["num_income_sources"]
     )
 
-    # 4.4 Rename columns for clarity
+    # Rename columns for clarity
     rename_map = {
         "female": "gender",
         "educ": "education_level",
@@ -236,9 +229,8 @@ def main():
     }
     df_clean = df_clean.rename(columns=rename_map)
 
-    # --------------------------------------------------------
-    # 5. CREATE TARGET (risk_label)
-    # --------------------------------------------------------
+    # CREATE TARGET (risk_label)
+
     df_clean["risk_label"] = 0
     df_clean.loc[
         (df_clean["borrowed_last_year"] == 1)
@@ -250,9 +242,8 @@ def main():
     print("\nClass distribution (risk_label):")
     print(df_clean["risk_label"].value_counts())
 
-    # --------------------------------------------------------
-    # 6. ONE-HOT ENCODE CATEGORICAL FEATURES
-    # --------------------------------------------------------
+
+    # ONE-HOT ENCODE CATEGORICAL FEATURES
     categorical_cols = [
         "gender",
         "education_level",
@@ -275,9 +266,8 @@ def main():
 
     print("Model dataframe shape:", df_model.shape)
 
-    # --------------------------------------------------------
-    # 7. DEFINE FEATURES & TARGET (REMOVE LEAKAGE)
-    # --------------------------------------------------------
+    # DEFINE FEATURES & TARGET (REMOVE LEAKAGE)
+    
     leakage_features = ["borrowed_last_year", "saved_last_year", "num_income_sources"]
     X = df_model.drop(columns=["risk_label"] + leakage_features)
     y = df_model["risk_label"]
@@ -287,9 +277,8 @@ def main():
     print(f"\nFeatures after removing leakage: {X.shape[1]}")
     print(f"Removed leakage features: {leakage_features}")
 
-    # --------------------------------------------------------
-    # 8. TRAIN/TEST SPLIT + SMOTETomek
-    # --------------------------------------------------------
+    # 8. TRAIN/TEST SPLIT and also SMOTETomek
+
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -306,9 +295,8 @@ def main():
 
     print("\nAfter SMOTETomek (train only):", Counter(y_train_res))
 
-    # --------------------------------------------------------
-    # 9. SCALING + LOGISTIC REGRESSION TRAINING
-    # --------------------------------------------------------
+    # 9. SCALING AND LOGISTIC REGRESSION TRAINING
+
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train_res)
     X_test_scaled = scaler.transform(X_test)
@@ -316,9 +304,9 @@ def main():
     lr_model = LogisticRegression(random_state=42, max_iter=1000)
     lr_model.fit(X_train_scaled, y_train_res)
 
-    # --------------------------------------------------------
-    # 10. QUICK EVALUATION
-    # --------------------------------------------------------
+
+    # A QUICK EVALUATION
+
     y_pred = lr_model.predict(X_test_scaled)
     y_proba = lr_model.predict_proba(X_test_scaled)[:, 1]
 
@@ -335,9 +323,8 @@ def main():
     for k, v in metrics.items():
         print(f"{k:18s}: {v:.4f}")
 
-    # --------------------------------------------------------
-    # 11. SAVE ARTIFACTS FOR DEPLOYMENT
-    # --------------------------------------------------------
+    # SAVING ARTIFACTS FOR DEPLOYMENT
+    
     joblib.dump(lr_model, "credit_risk_lr.pkl")
     joblib.dump(scaler, "scaler.pkl")
     joblib.dump(feature_names, "feature_names.pkl")
