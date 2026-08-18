@@ -5,7 +5,7 @@ import pandas as pd
 from flask_cors import CORS    
 import os
 
-# ---------- 1. LOAD TRAINED ARTIFACTS ----------
+#  LOAD TRAINED ARTIFACTS
 model = joblib.load("credit_risk_lr.pkl")
 scaler = joblib.load("scaler.pkl")
 feature_names = joblib.load("feature_names.pkl")  # list of column names used in training
@@ -13,13 +13,13 @@ feature_names = joblib.load("feature_names.pkl")  # list of column names used in
 app = Flask(__name__)
 CORS(app) 
 
-# ---------- 2. HEALTH CHECK ----------
+# HEALTH CHECK 
 @app.route("/ping", methods=["GET"])
 def ping():
     return jsonify({"status": "ok"})
 
 
-# ---------- 3. PREDICTION ENDPOINT ----------
+# PREDICTION ENDPOINT 
 @app.route("/predict", methods=["POST"])
 def predict():
     """
@@ -40,7 +40,7 @@ def predict():
 
     data = request.json or {}
 
-    # Build a 1-row vector with the **same order** as feature_names
+    
     row = [data.get(f, 0) for f in feature_names]
     X = pd.DataFrame([row], columns=feature_names)
 
